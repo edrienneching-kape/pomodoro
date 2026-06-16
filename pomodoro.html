@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro Timer</title>
+<style>
+  :root {
+    --blue-900: #0a2540;
+    --blue-700: #1e3a8a;
+    --blue-600: #2563eb;
+    --blue-500: #3b82f6;
+    --blue-300: #93c5fd;
+    --blue-100: #dbeafe;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(160deg, var(--blue-900), var(--blue-700));
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .app {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  }
+
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: var(--blue-100);
+    letter-spacing: 0.5px;
+  }
+
+  .modes {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 6px;
+    border-radius: 12px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    background: transparent;
+    color: var(--blue-300);
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .mode-btn.active {
+    background: var(--blue-600);
+    color: #fff;
+  }
+
+  .timer {
+    font-size: 5rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+
+  .session-label {
+    color: var(--blue-300);
+    font-size: 0.9rem;
+    margin-bottom: 28px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .btn {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.2s;
+  }
+
+  .btn:active { transform: scale(0.96); }
+
+  .btn-primary {
+    background: var(--blue-500);
+    color: #fff;
+    flex: 1;
+  }
+
+  .btn-primary:hover { background: var(--blue-600); }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--blue-100);
+  }
+
+  .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); }
+
+  .count {
+    margin-top: 28px;
+    font-size: 0.85rem;
+    color: var(--blue-300);
+  }
+
+  /* Settings */
+  .settings {
+    margin-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 18px;
+    text-align: left;
+  }
+
+  .settings summary {
+    cursor: pointer;
+    color: var(--blue-300);
+    font-size: 0.85rem;
+    font-weight: 600;
+    list-style: none;
+    user-select: none;
+  }
+
+  .settings summary::-webkit-details-marker { display: none; }
+  .settings summary::before { content: "⚙ "; }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    font-size: 0.85rem;
+    color: var(--blue-100);
+  }
+
+  .setting-row input[type="number"] {
+    width: 60px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.25);
+    color: #fff;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .setting-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--blue-500);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <h1>🍅 Pomodoro Timer</h1>
+
+    <div class="modes">
+      <button class="mode-btn active" data-mode="focus">Focus</button>
+      <button class="mode-btn" data-mode="short">Short</button>
+      <button class="mode-btn" data-mode="long">Long</button>
+    </div>
+
+    <div class="timer" id="timer">25:00</div>
+    <div class="session-label" id="sessionLabel">Focus session</div>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="startBtn">Start</button>
+      <button class="btn btn-secondary" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="count">Completed focus sessions: <span id="count">0</span></div>
+
+    <details class="settings">
+      <summary>Settings</summary>
+      <div class="setting-row">
+        <label for="focusMin">Focus (min)</label>
+        <input type="number" id="focusMin" min="1" max="180" value="25">
+      </div>
+      <div class="setting-row">
+        <label for="shortMin">Short break (min)</label>
+        <input type="number" id="shortMin" min="1" max="60" value="5">
+      </div>
+      <div class="setting-row">
+        <label for="longMin">Long break (min)</label>
+        <input type="number" id="longMin" min="1" max="60" value="15">
+      </div>
+      <div class="setting-row">
+        <label for="autoSwitch">Auto-start next session</label>
+        <input type="checkbox" id="autoSwitch" checked>
+      </div>
+      <div class="setting-row">
+        <label for="notify">Desktop notifications</label>
+        <input type="checkbox" id="notify">
+      </div>
+    </details>
+  </div>
+
+<script>
+  const timerEl = document.getElementById('timer');
+  const sessionLabel = document.getElementById('sessionLabel');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const countEl = document.getElementById('count');
+  const modeBtns = document.querySelectorAll('.mode-btn');
+
+  const focusMinInput = document.getElementById('focusMin');
+  const shortMinInput = document.getElementById('shortMin');
+  const longMinInput = document.getElementById('longMin');
+  const autoSwitchInput = document.getElementById('autoSwitch');
+  const notifyInput = document.getElementById('notify');
+
+  const LABELS = { focus: 'Focus', short: 'Short Break', long: 'Long Break' };
+
+  let mode = 'focus';
+  let totalSeconds = 25 * 60;
+  let remaining = totalSeconds;
+  let intervalId = null;
+  let running = false;
+  let completed = 0;
+
+  function minutesFor(m) {
+    if (m === 'focus') return parseInt(focusMinInput.value, 10) || 25;
+    if (m === 'short') return parseInt(shortMinInput.value, 10) || 5;
+    return parseInt(longMinInput.value, 10) || 15;
+  }
+
+  function format(s) {
+    const m = String(Math.floor(s / 60)).padStart(2, '0');
+    const sec = String(s % 60).padStart(2, '0');
+    return `${m}:${sec}`;
+  }
+
+  function render() {
+    timerEl.textContent = format(remaining);
+    document.title = `${format(remaining)} — ${LABELS[mode]}`;
+  }
+
+  function setMode(newMode, autoStart) {
+    mode = newMode;
+    modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    totalSeconds = minutesFor(mode) * 60;
+    remaining = totalSeconds;
+    sessionLabel.textContent = `${LABELS[mode]} session`;
+    render();
+    if (autoStart) {
+      start();
+    } else {
+      stopClock();
+      startBtn.textContent = 'Start';
+    }
+  }
+
+  function tick() {
+    if (remaining > 0) {
+      remaining--;
+      render();
+    } else {
+      finish();
+    }
+  }
+
+  function finish() {
+    stopClock();
+    if (mode === 'focus') {
+      completed++;
+      countEl.textContent = completed;
+    }
+    beep();
+
+    // Decide what comes next: every 4th focus → long break
+    let next;
+    if (mode === 'focus') {
+      next = (completed % 4 === 0) ? 'long' : 'short';
+    } else {
+      next = 'focus';
+    }
+
+    notify(`${LABELS[mode]} complete!`, `Time for: ${LABELS[next]}`);
+
+    if (autoSwitchInput.checked) {
+      setMode(next, true);
+    } else {
+      setMode(next, false);
+    }
+  }
+
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.8);
+    } catch (e) {}
+  }
+
+  function notify(title, body) {
+    if (notifyInput.checked && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
+  }
+
+  notifyInput.addEventListener('change', () => {
+    if (notifyInput.checked && 'Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission().then(p => {
+        if (p !== 'granted') notifyInput.checked = false;
+      });
+    }
+  });
+
+  function stopClock() {
+    clearInterval(intervalId);
+    running = false;
+  }
+
+  function start() {
+    if (running) return;
+    running = true;
+    startBtn.textContent = 'Pause';
+    intervalId = setInterval(tick, 1000);
+  }
+
+  function toggle() {
+    if (running) {
+      stopClock();
+      startBtn.textContent = 'Resume';
+    } else {
+      start();
+    }
+  }
+
+  function reset() {
+    stopClock();
+    remaining = totalSeconds;
+    startBtn.textContent = 'Start';
+    render();
+  }
+
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => setMode(btn.dataset.mode, false));
+  });
+
+  // Live-update duration when settings change for the current mode
+  [focusMinInput, shortMinInput, longMinInput].forEach(input => {
+    input.addEventListener('change', () => {
+      if (!running) {
+        totalSeconds = minutesFor(mode) * 60;
+        remaining = totalSeconds;
+        render();
+      }
+    });
+  });
+
+  startBtn.addEventListener('click', toggle);
+  resetBtn.addEventListener('click', reset);
+
+  render();
+</script>
+</body>
+</html>
